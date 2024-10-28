@@ -27,6 +27,8 @@ export default function HabitCreationScreen() {
     control,
     handleSubmit,
     formState: { errors },
+    getValues,
+    setValue,
   } = useForm({
     defaultValues: {
       habitName: "",
@@ -41,7 +43,7 @@ export default function HabitCreationScreen() {
   const onTimeChange = (event, selectedDate) => {
     setShowTimePicker(false);
     if (selectedDate) {
-      control.setValue("reminderTime", selectedDate);
+      setValue("reminderTime", selectedDate);
     }
   };
 
@@ -165,7 +167,7 @@ export default function HabitCreationScreen() {
         />
         {showTimePicker && (
           <DateTimePicker
-            value={control.getValues("reminderTime")}
+            value={getValues("reminderTime")}
             mode="time"
             is24Hour={false}
             display="default"
