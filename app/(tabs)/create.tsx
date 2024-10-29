@@ -1,3 +1,4 @@
+// HabitCreationScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -5,10 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useForm, Controller } from "react-hook-form";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const daysOfWeek = [
   { day: "Mon", value: 1 },
@@ -20,7 +23,7 @@ const daysOfWeek = [
   { day: "Sun", value: 7 },
 ];
 
-export default function HabitCreationScreen() {
+export default function HabitCreationScreen({ navigation }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const {
@@ -29,6 +32,7 @@ export default function HabitCreationScreen() {
     formState: { errors },
     getValues,
     setValue,
+    reset,
   } = useForm({
     defaultValues: {
       habitName: "",
@@ -47,16 +51,44 @@ export default function HabitCreationScreen() {
     }
   };
 
-  const onSubmit = (data) => {
-    console.log("Habit Data:", data);
-    // Save habit data
-  };
-
   const toggleDay = (dayValue, selectedDays) => {
     if (selectedDays.includes(dayValue)) {
       return selectedDays.filter((day) => day !== dayValue);
     } else {
       return [...selectedDays, dayValue];
+    }
+  };
+
+  const onSubmit = async (data) => {
+    const habit = {
+      id: Date.now(), // Use timestamp as a unique ID
+      name: data.habitName,
+      frequency: data.frequency,
+      days: data.selectedDays,
+      reminderTime: data.reminderTime.toISOString(),
+    };
+
+    try {
+      // Retrieve existing habits
+      const existingHabits = await AsyncStorage.getItem("habits");
+      const habits = existingHabits ? JSON.parse(existingHabits) : [];
+
+      // Add the new habit
+      habits.push(habit);
+
+      // Save the habits back to AsyncStorage
+      await AsyncStorage.setItem("habits", JSON.stringify(habits));
+
+      Alert.alert("Success", "Habit saved successfully");
+
+      // Reset the form
+      reset();
+
+      // Navigate back to the home screen
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error saving habit:", error);
+      Alert.alert("Error", "An error occurred while saving the habit");
     }
   };
 
@@ -66,6 +98,7 @@ export default function HabitCreationScreen() {
         Create New Habit
       </Text>
 
+      {/* Habit Name */}
       <View className="mb-4">
         <Text className="text-gray-700 mb-2">Habit Name</Text>
         <Controller
@@ -87,13 +120,14 @@ export default function HabitCreationScreen() {
         )}
       </View>
 
+      {/* Frequency */}
       <View className="mb-4">
         <Text className="text-gray-700 mb-2">Frequency</Text>
-        <View className="border border-gray-300 rounded">
-          <Controller
-            control={control}
-            name="frequency"
-            render={({ field: { onChange, value } }) => (
+        <Controller
+          control={control}
+          name="frequency"
+          render={({ field: { onChange, value } }) => (
+            <View className="border border-gray-300 rounded">
               <Picker
                 selectedValue={value}
                 onValueChange={onChange}
@@ -103,11 +137,12 @@ export default function HabitCreationScreen() {
                   <Picker.Item key={option} label={option} value={option} />
                 ))}
               </Picker>
-            )}
-          />
-        </View>
+            </View>
+          )}
+        />
       </View>
 
+      {/* Days */}
       <View className="mb-4">
         <Text className="text-gray-700 mb-2">Days</Text>
         <Controller
@@ -146,6 +181,7 @@ export default function HabitCreationScreen() {
         )}
       </View>
 
+      {/* Reminder Time */}
       <View className="mb-4">
         <Text className="text-gray-700 mb-2">Reminder Time</Text>
         <Controller
@@ -176,6 +212,7 @@ export default function HabitCreationScreen() {
         )}
       </View>
 
+      {/* Save Button */}
       <TouchableOpacity
         className="bg-blue-500 p-4 rounded mb-10"
         onPress={handleSubmit(onSubmit)}
